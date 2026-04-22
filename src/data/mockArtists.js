@@ -1,0 +1,46 @@
+// src/data/mockArtists.js
+// Datos simulados de artistas.
+// En producción, viene de spotify_service -> getArtistas(termino).
+
+export const MOCK_ARTISTS = [
+  {
+    id: "a1",
+    name: "Bad Bunny",
+    genres: ["reggaeton", "latin trap"],
+    followers: 46200000,
+    image: "https://i.scdn.co/image/ab6761610000e5eb8a0a2940f12e1eb4bac54f2b",
+    popularity: 98,
+  },
+  {
+    id: "a2",
+    name: "Taylor Swift",
+    genres: ["pop", "country pop"],
+    followers: 93000000,
+    image: "https://i.scdn.co/image/ab6761610000e5eb5a00969a4698c3132a15fbb0",
+    popularity: 100,
+  },
+  {
+    id: "a3",
+    name: "The Weeknd",
+    genres: ["canadian contemporary r&b"],
+    followers: 84000000,
+    image: "https://i.scdn.co/image/ab6761610000e5eb214f3cf1cbe7139c1e26ffbb",
+    popularity: 96,
+  },
+  {
+    id: "a4",
+    name: "Rosalía",
+    genres: ["flamenco", "r&b"],
+    followers: 11000000,
+    image: "https://i.scdn.co/image/ab6761610000e5eb6d8bc22b5ac2c2ee5e5d1f2e",
+    popularity: 88,
+  },
+  {
+    id: "a5",
+    name: "Kendrick Lamar",
+    genres: ["conscious hip hop", "rap"],
+    followers: 22000000,
+    image: "https://i.scdn.co/image/ab6761610000e5eb437b9e2a82505b3d93ff1022",
+    popularity: 91,
+  },
+];
