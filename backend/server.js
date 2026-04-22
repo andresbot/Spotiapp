@@ -178,5 +178,15 @@ app.get('/api/album/:id', async (req, res) => {
   }
 });
 
+// Endpoint simple para verificar que el servicio esta vivo (Render health-check / debugging).
+app.get('/api/health', (req, res) => {
+  res.json({
+    ok: true,
+    service: 'spotiapp-backend',
+    provider: 'deezer',
+    timestamp: new Date().toISOString(),
+  });
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));

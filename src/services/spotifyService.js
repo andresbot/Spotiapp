@@ -1,4 +1,6 @@
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.100.13:3000/api';
+// Para dispositivo real / APK, define EXPO_PUBLIC_API_URL (por ejemplo el dominio de Render).
+// Fallback seguro para desarrollo local (web/emulador con backend en la misma maquina).
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
 
 const fetchLocal = async (endpoint) => {
   const response = await fetch(`${API_BASE_URL}${endpoint}`);

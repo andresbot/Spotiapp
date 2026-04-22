@@ -99,6 +99,23 @@ spotiapp/
     npm start
     ```
 
+## Deploy Backend en Render
+
+Este repo incluye un backend Express en `backend/` listo para Render (Blueprint en `render.yaml`).
+
+1. Subir el repo a GitHub.
+2. En Render: `New` -> `Blueprint` y selecciona el repo.
+3. Render creara el servicio `spotiapp-backend`. Cuando termine, obtendras una URL publica (por ejemplo `https://spotiapp-backend.onrender.com`).
+4. Configura la app Expo para apuntar al backend desplegado:
+
+   - Crea un `.env` en la raiz basado en `.env.example` con:
+     - `EXPO_PUBLIC_API_URL=https://TU_SERVICIO.onrender.com/api`
+
+5. Prueba el backend en el navegador:
+
+   - `https://TU_SERVICIO.onrender.com/api/health`
+   - `https://TU_SERVICIO.onrender.com/api/new-releases`
+
 ## Exportar a APK (Android)
 
 Este proyecto usa un backend externo (en `backend/`) para consultar releases/artistas/tracks. El APK no "incluye" ese backend: debes tenerlo corriendo en una IP/dominio accesible desde el telefono.
