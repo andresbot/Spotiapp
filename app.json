@@ -13,6 +13,11 @@
       "android",
       "web"
     ],
+    "android": {
+      "package": "com.camilo.spotiapp",
+      "versionCode": 1,
+      "usesCleartextTraffic": true
+    },
     "web": {
       "bundler": "metro"
     },

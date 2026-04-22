@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Audio } from "expo-av";
 
 import { getTopTracks } from "../domain/getTopTracks";
 import TrackItem from "./components/TrackItem";
 import ArtistImage from "../../../shared/presentation/components/ArtistImage";
+import Reveal from "../../../shared/presentation/components/Reveal";
 import Spinner from "../../../shared/presentation/components/Spinner";
 import Icon from "../../../shared/presentation/components/Icon";
 import { formatFollowers } from "../../../shared/domain/formatters";
@@ -14,20 +16,59 @@ export default function ArtistScreen({ artist, onBack }) {
   const [tracks, setTracks] = useState([]);
   const [playing, setPlaying] = useState(null);
   const [heroError, setHeroError] = useState(false);
+  const [error, setError] = useState(null);
+  const soundRef = useRef(null);
+
+  const stopPlayback = async () => {
+    if (!soundRef.current) return;
+
+    try {
+      await soundRef.current.stopAsync();
+    } catch (err) {
+      console.log("Error stopping preview:", err);
+    }
+
+    try {
+      await soundRef.current.unloadAsync();
+    } catch (err) {
+      console.log("Error unloading preview:", err);
+    }
+
+    soundRef.current = null;
+  };
+
+  useEffect(() => {
+    return () => {
+      stopPlayback();
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
 
     const loadTracks = async () => {
-      setLoading(true);
-      const data = await getTopTracks(artist?.id);
+      try {
+        setLoading(true);
+        setError(null);
+        await stopPlayback();
+        const data = await getTopTracks(artist?.id);
 
-      if (!isMounted) return;
+        if (!isMounted) return;
 
-      setTracks(data);
-      setPlaying(null);
-      setHeroError(false);
-      setLoading(false);
+        setTracks(data);
+        setPlaying(null);
+        setHeroError(false);
+      } catch (err) {
+        if (!isMounted) return;
+
+        setTracks([]);
+        setPlaying(null);
+        setError(err.message);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
     };
 
     loadTracks();
@@ -37,9 +78,72 @@ export default function ArtistScreen({ artist, onBack }) {
     };
   }, [artist?.id]);
 
-  const togglePlay = (trackId) => {
-    setPlaying((prev) => (prev === trackId ? null : trackId));
+  const handleTrackToggle = async (track) => {
+    if (!track?.preview) return;
+
+    try {
+      if (playing === track.id) {
+        await stopPlayback();
+        setPlaying(null);
+        return;
+      }
+
+      await Audio.setAudioModeAsync({
+        playsInSilentModeIOS: true,
+        staysActiveInBackground: false,
+        shouldDuckAndroid: true,
+      });
+
+      await stopPlayback();
+
+      const { sound } = await Audio.Sound.createAsync(
+        { uri: track.preview },
+        {
+          shouldPlay: true,
+          positionMillis: 0,
+          progressUpdateIntervalMillis: 250,
+        },
+      );
+
+      await sound.setPositionAsync(0);
+      await sound.playAsync();
+
+      soundRef.current = sound;
+      setPlaying(track.id);
+
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (!status.isLoaded) return;
+
+        if (status.didJustFinish) {
+          sound.unloadAsync().catch(() => {});
+
+          if (soundRef.current === sound) {
+            soundRef.current = null;
+          }
+
+          setPlaying((current) => (current === track.id ? null : current));
+        }
+      });
+    } catch (err) {
+      console.log("Error reproducing preview:", err);
+      setPlaying(null);
+    }
   };
+
+  const handleMainPlay = async () => {
+    if (playing) {
+      await stopPlayback();
+      setPlaying(null);
+      return;
+    }
+
+    const firstPlayableTrack = tracks.find((track) => track.preview);
+    if (!firstPlayableTrack) return;
+
+    await handleTrackToggle(firstPlayableTrack);
+  };
+
+  const hasPlayableTracks = tracks.some((track) => track.preview);
 
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.container}>
@@ -62,7 +166,11 @@ export default function ArtistScreen({ artist, onBack }) {
           <Icon name="back" size={18} color={Colors.text} />
         </Pressable>
 
-        <View style={styles.heroMeta}>
+        <Reveal delay={80} style={styles.heroMeta}>
+          <View style={styles.artistBadge}>
+            <Icon name="sparkles" size={12} color={Colors.bg} />
+            <Text style={styles.artistBadgeText}>Artist mode</Text>
+          </View>
           <Text style={styles.artistName}>{artist?.name}</Text>
           <View style={styles.pillsRow}>
             <View style={styles.followersPill}>
@@ -74,28 +182,49 @@ export default function ArtistScreen({ artist, onBack }) {
               <Text style={styles.genrePillText}>{artist?.genres?.[0] ?? "artist"}</Text>
             </View>
           </View>
-        </View>
+        </Reveal>
       </View>
 
-      <View style={styles.actionsRow}>
+      <Reveal delay={120} style={styles.actionsRow}>
         <Pressable style={styles.iconButton}>
-          <Icon name="heart" size={28} color={Colors.muted} />
+          <Icon name="heart" size={24} color={Colors.rose} />
         </Pressable>
 
-        <Pressable style={styles.mainPlayButton} onPress={() => togglePlay("all") }>
-          <Icon name={playing === "all" ? "pause" : "play"} size={24} color="#000000" />
+        <Pressable
+          style={[
+            styles.mainPlayButton,
+            !hasPlayableTracks && styles.mainPlayButtonDisabled,
+          ]}
+          onPress={handleMainPlay}
+          disabled={!hasPlayableTracks}
+        >
+          <Icon name={playing ? "pause" : "play"} size={24} color={Colors.bg} />
         </Pressable>
 
         <Pressable style={styles.iconButton}>
-          <Icon name="more" size={26} color={Colors.muted} />
+          <Icon name="more" size={22} color={Colors.cyan} />
         </Pressable>
-      </View>
+      </Reveal>
 
       <View style={styles.tracksSection}>
-        <Text style={styles.sectionTitle}>Top 10 Canciones</Text>
+        <Reveal delay={150}>
+          <View style={styles.sectionHeader}>
+            <View>
+              <Text style={styles.sectionEyebrow}>Top set</Text>
+              <Text style={styles.sectionTitle}>Las 10 que mueven la escena</Text>
+            </View>
+            <View style={styles.sectionChip}>
+              <Text style={styles.sectionChipText}>{tracks.length || 10}</Text>
+            </View>
+          </View>
+        </Reveal>
 
         {loading ? (
           <Spinner />
+        ) : error ? (
+          <View style={styles.errorState}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
         ) : (
           <View>
             {tracks.map((track, index) => (
@@ -104,7 +233,7 @@ export default function ArtistScreen({ artist, onBack }) {
                 track={track}
                 index={index}
                 isPlaying={playing === track.id}
-                onTogglePlay={() => togglePlay(track.id)}
+                onTogglePlay={() => handleTrackToggle(track)}
                 isLast={index === tracks.length - 1}
               />
             ))}
@@ -117,11 +246,11 @@ export default function ArtistScreen({ artist, onBack }) {
 
 const styles = StyleSheet.create({
   container: {
-    paddingBottom: Spacing.lg,
+    paddingBottom: Spacing.xxl,
   },
   hero: {
     position: "relative",
-    height: 260,
+    height: 330,
     justifyContent: "flex-end",
     backgroundColor: Colors.surface,
   },
@@ -136,29 +265,50 @@ const styles = StyleSheet.create({
   },
   heroOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.45)",
+    backgroundColor: "rgba(4, 9, 14, 0.48)",
   },
   backButton: {
     position: "absolute",
-    top: 16,
-    left: 16,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    top: 18,
+    left: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.55)",
+    backgroundColor: "rgba(7, 19, 28, 0.62)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.08)",
   },
   heroMeta: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.md,
+    paddingBottom: Spacing.lg,
     zIndex: 1,
+  },
+  artistBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.green,
+    marginBottom: Spacing.md,
+  },
+  artistBadgeText: {
+    color: Colors.bg,
+    fontSize: FontSize.sm,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
   },
   artistName: {
     color: Colors.text,
     fontSize: FontSize.hero,
     fontWeight: "800",
-    marginBottom: Spacing.xs,
+    marginBottom: Spacing.sm,
+    lineHeight: 42,
   },
   pillsRow: {
     flexDirection: "row",
@@ -167,55 +317,110 @@ const styles = StyleSheet.create({
   },
   followersPill: {
     borderRadius: Radius.full,
-    backgroundColor: "#1DB95422",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    backgroundColor: `${Colors.green}1F`,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
   },
   followersPillText: {
     color: Colors.green,
     fontSize: FontSize.sm,
-    fontWeight: "700",
+    fontWeight: "800",
   },
   genrePill: {
     borderRadius: Radius.full,
-    backgroundColor: "#FFFFFF1F",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    backgroundColor: "rgba(255, 255, 255, 0.12)",
+    paddingHorizontal: 12,
+    paddingVertical: 7,
   },
   genrePillText: {
     color: Colors.text,
     fontSize: FontSize.sm,
+    fontWeight: "700",
     textTransform: "capitalize",
   },
   actionsRow: {
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
+    marginHorizontal: Spacing.lg,
+    marginTop: -26,
+    marginBottom: Spacing.lg,
+    padding: 10,
+    borderRadius: Radius.full,
+    backgroundColor: `${Colors.panel}E8`,
+    borderWidth: 1,
+    borderColor: `${Colors.line}80`,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
   iconButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: `${Colors.card}E8`,
   },
   mainPlayButton: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: Colors.green,
+    shadowColor: Colors.shadow,
+    shadowOpacity: 0.24,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+  },
+  mainPlayButtonDisabled: {
+    opacity: 0.45,
   },
   tracksSection: {
     paddingHorizontal: Spacing.lg,
   },
+  sectionHeader: {
+    marginBottom: Spacing.md,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    gap: Spacing.sm,
+  },
+  sectionEyebrow: {
+    color: Colors.sun,
+    fontSize: FontSize.sm,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 0.7,
+  },
   sectionTitle: {
+    marginTop: 4,
     color: Colors.text,
-    fontSize: FontSize.md,
-    fontWeight: "700",
-    marginBottom: Spacing.sm,
+    fontSize: FontSize.xl,
+    fontWeight: "800",
+  },
+  sectionChip: {
+    minWidth: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: `${Colors.sun}1D`,
+  },
+  sectionChipText: {
+    color: Colors.sun,
+    fontSize: FontSize.base,
+    fontWeight: "800",
+  },
+  errorState: {
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Radius.lg,
+    backgroundColor: `${Colors.card}D8`,
+    borderWidth: 1,
+    borderColor: `${Colors.line}66`,
+  },
+  errorText: {
+    color: Colors.muted,
+    fontSize: FontSize.base,
+    lineHeight: 22,
   },
 });

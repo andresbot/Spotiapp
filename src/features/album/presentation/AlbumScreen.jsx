@@ -1,11 +1,25 @@
 import { useState } from "react";
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import Icon from "../../../shared/presentation/components/Icon";
+import Reveal from "../../../shared/presentation/components/Reveal";
 import { Colors, FontSize, Radius, Spacing } from "../../../shared/theme/tokens";
 
 export default function AlbumScreen({ album, onBack }) {
   const [heroError, setHeroError] = useState(false);
+
+  const releaseDateLabel = album?.releaseDate
+    ? new Date(`${album.releaseDate}T12:00:00`).toLocaleDateString("es-CO", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : null;
+
+  const handleOpenAlbum = async () => {
+    if (!album?.url) return;
+    await Linking.openURL(album.url);
+  };
 
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.container}>
@@ -28,32 +42,56 @@ export default function AlbumScreen({ album, onBack }) {
           <Icon name="back" size={18} color={Colors.text} />
         </Pressable>
 
-        <View style={styles.heroMeta}>
+        <Reveal delay={80} style={styles.heroMeta}>
+          <View style={styles.heroTag}>
+            <Icon name="sparkles" size={12} color={Colors.bg} />
+            <Text style={styles.heroTagText}>{album?.sourceLabel || "Release"}</Text>
+          </View>
           <Text style={styles.albumTitle}>{album?.name}</Text>
           <Text style={styles.albumArtist}>{album?.artist}</Text>
-        </View>
+        </Reveal>
       </View>
 
-      <View style={styles.content}>
+      <Reveal delay={120} style={styles.contentCard}>
+        <View style={styles.metaRow}>
+          <View style={styles.metaPill}>
+            <Text style={styles.metaPillLabel}>Fecha</Text>
+            <Text style={styles.metaPillValue}>{releaseDateLabel || "Reciente"}</Text>
+          </View>
+          <View style={styles.metaPill}>
+            <Text style={styles.metaPillLabel}>Fuente</Text>
+            <Text style={styles.metaPillValue}>{album?.sourceLabel || "Catalogo"}</Text>
+          </View>
+        </View>
+
         <Text style={styles.description}>
-          Nuevo lanzamiento disponible en Spotify. Escucha el album completo y descubre todos sus tracks.
+          {album?.sourceLabel
+            ? `Un lanzamiento activo dentro de ${album.sourceLabel}, con una portada protagonista y acceso directo al release.`
+            : "Un lanzamiento activo dentro del catalogo disponible."}
         </Text>
 
-        <Pressable style={styles.primaryButton}>
-          <Text style={styles.primaryButtonText}>Escuchar en Spotify</Text>
+        <Pressable
+          style={[styles.primaryButton, !album?.url && styles.primaryButtonDisabled]}
+          onPress={handleOpenAlbum}
+          disabled={!album?.url}
+        >
+          <Text style={styles.primaryButtonText}>
+            {album?.sourceLabel ? `Abrir en ${album.sourceLabel}` : "Abrir lanzamiento"}
+          </Text>
+          <Icon name="forward" size={16} color={Colors.bg} />
         </Pressable>
-      </View>
+      </Reveal>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    paddingBottom: Spacing.lg,
+    paddingBottom: Spacing.xxl,
   },
   hero: {
     position: "relative",
-    height: 280,
+    height: 340,
     justifyContent: "flex-end",
     backgroundColor: Colors.surface,
   },
@@ -68,54 +106,109 @@ const styles = StyleSheet.create({
   },
   heroOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.45)",
+    backgroundColor: "rgba(4, 9, 14, 0.52)",
   },
   backButton: {
     position: "absolute",
-    top: 16,
-    left: 16,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    top: 18,
+    left: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.55)",
+    backgroundColor: "rgba(7, 19, 28, 0.62)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.08)",
   },
   heroMeta: {
     zIndex: 1,
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.md,
+    paddingBottom: Spacing.lg,
+  },
+  heroTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.sun,
+    marginBottom: Spacing.md,
+  },
+  heroTagText: {
+    color: Colors.bg,
+    fontSize: FontSize.sm,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
   },
   albumTitle: {
     color: Colors.text,
-    fontSize: 28,
+    fontSize: FontSize.hero,
     fontWeight: "800",
-    marginBottom: 4,
+    marginBottom: 6,
+    lineHeight: 42,
   },
   albumArtist: {
     color: Colors.muted,
-    fontSize: FontSize.md,
+    fontSize: FontSize.lg,
   },
-  content: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
+  contentCard: {
+    marginHorizontal: Spacing.lg,
+    marginTop: -24,
+    padding: Spacing.lg,
+    borderRadius: Radius.lg,
+    backgroundColor: `${Colors.panel}EE`,
+    borderWidth: 1,
+    borderColor: `${Colors.line}80`,
+  },
+  metaRow: {
+    flexDirection: "row",
+    gap: Spacing.md,
+  },
+  metaPill: {
+    flex: 1,
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    backgroundColor: `${Colors.card}D0`,
+  },
+  metaPillLabel: {
+    color: Colors.sun,
+    fontSize: FontSize.sm,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+  },
+  metaPillValue: {
+    marginTop: 6,
+    color: Colors.text,
+    fontSize: FontSize.base,
+    fontWeight: "700",
   },
   description: {
+    marginTop: Spacing.lg,
     color: Colors.muted,
-    fontSize: FontSize.base,
-    lineHeight: 22,
+    fontSize: FontSize.md,
+    lineHeight: 24,
   },
   primaryButton: {
-    marginTop: Spacing.md,
+    marginTop: Spacing.lg,
     borderRadius: Radius.full,
     backgroundColor: Colors.green,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 14,
+    flexDirection: "row",
+    gap: 10,
+    paddingVertical: 15,
   },
   primaryButtonText: {
-    color: "#000000",
+    color: Colors.bg,
     fontSize: FontSize.md,
     fontWeight: "800",
+  },
+  primaryButtonDisabled: {
+    opacity: 0.45,
   },
 });

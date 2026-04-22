@@ -1,23 +1,19 @@
-import { MOCK_ARTISTS } from "../../../shared/data/mocks/artists";
-
-const NETWORK_DELAY_MS = 550;
-
-const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+import { spotifyService } from '../../../services/spotifyService';
+import { MOCK_ARTISTS } from '../../../shared/data/mocks/artists';
 
 export const searchRepository = {
   async searchArtists(term) {
-    await wait(NETWORK_DELAY_MS);
+    if (!term.trim()) return [];
 
-    const normalized = term.trim().toLowerCase();
-    if (!normalized) return [];
+    try {
+      return await spotifyService.searchArtists(term);
+    } catch (error) {
+      console.warn('Usando artistas mock por error de red:', error.message);
 
-    return MOCK_ARTISTS.filter((artist) => {
-      const matchesName = artist.name.toLowerCase().includes(normalized);
-      const matchesGenre = artist.genres.some((genre) =>
-        genre.toLowerCase().includes(normalized)
+      const normalizedTerm = term.trim().toLowerCase();
+      return MOCK_ARTISTS.filter((artist) =>
+        artist.name.toLowerCase().includes(normalizedTerm),
       );
-
-      return matchesName || matchesGenre;
-    });
+    }
   },
 };

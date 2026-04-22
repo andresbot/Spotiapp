@@ -1,18 +1,24 @@
 export const Colors = {
-  bg: "#0A0A0A",
-  surface: "#111111",
-  card: "#1A1A1A",
-  green: "#1DB954",
-  greenDim: "#1AA34A",
-  text: "#FFFFFF",
-  muted: "#A7A7A7",
-  faint: "#404040",
+  bg: "#07131C",
+  surface: "#102230",
+  card: "#163042",
+  panel: "#1D3A4F",
+  green: "#7CF7B4",
+  greenDim: "#4BC984",
+  text: "#F4F7FB",
+  muted: "#9EB5C8",
+  faint: "#2A455B",
+  line: "#40617C",
+  sun: "#FFB56B",
+  rose: "#FF7B73",
+  cyan: "#76D4FF",
+  shadow: "#02070B",
 };
 
 export const Radius = {
   sm: 8,
-  md: 12,
-  lg: 20,
+  md: 14,
+  lg: 24,
   full: 999,
 };
 
@@ -22,9 +28,9 @@ export const FontSize = {
   base: 13,
   md: 15,
   lg: 18,
-  xl: 22,
-  xxl: 26,
-  hero: 32,
+  xl: 24,
+  xxl: 30,
+  hero: 38,
 };
 
 export const Spacing = {
@@ -33,4 +39,5 @@ export const Spacing = {
   md: 14,
   lg: 20,
   xl: 28,
+  xxl: 36,
 };

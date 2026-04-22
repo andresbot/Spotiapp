@@ -1,12 +1,13 @@
-import { MOCK_RELEASES } from "../../../shared/data/mocks/releases";
-
-const NETWORK_DELAY_MS = 700;
-
-const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+import { spotifyService } from '../../../services/spotifyService';
+import { MOCK_RELEASES } from '../../../shared/data/mocks/releases';
 
 export const homeRepository = {
   async getNewReleases() {
-    await wait(NETWORK_DELAY_MS);
-    return MOCK_RELEASES;
+    try {
+      return await spotifyService.getNewReleases();
+    } catch (error) {
+      console.warn('Usando releases mock por error de red:', error.message);
+      return MOCK_RELEASES;
+    }
   },
 };

@@ -91,6 +91,44 @@ spotiapp/
     npm run ios
     ```
 
+4. Levantar backend local:
+
+    ```bash
+    cd backend
+    npm install
+    npm start
+    ```
+
+## Exportar a APK (Android)
+
+Este proyecto usa un backend externo (en `backend/`) para consultar releases/artistas/tracks. El APK no "incluye" ese backend: debes tenerlo corriendo en una IP/dominio accesible desde el telefono.
+
+- Configura `EXPO_PUBLIC_API_URL` con la URL del backend, por ejemplo `https://tu-dominio/api` o `http://TU_IP_LAN:3000/api`.
+- Para compilar un APK con EAS:
+
+  ```bash
+  npm install -g eas-cli
+  eas login
+  eas build -p android --profile preview
+  ```
+
+Notas:
+
+- Si el backend es `http://...`, Android requiere permitir trafico sin HTTPS. Ya esta activado en `app.json` con `android.usesCleartextTraffic: true`.
+- Para distribucion fuera de tu red (cualquier lugar), usa un backend publicado (idealmente `https://...`).
+
+## Compatibilidad sin Premium
+
+Spotify cambio sus reglas para apps en Development Mode y ahora exige que el owner del app tenga Premium para que las llamadas funcionen.
+Para mantener la app operativa y cumplir el flujo del taller (lanzamientos, busqueda de artistas, top tracks y preview de 30 segundos), el backend expone la misma interfaz `/api/...` pero consume endpoints publicos de Deezer.
+
+La arquitectura mobile no cambia:
+
+- Home: lista lanzamientos recientes.
+- Search: busca artistas en tiempo real.
+- Artist detail: muestra top 10 canciones.
+- Preview: reproduce muestras de 30 segundos cuando el proveedor las entrega.
+
 ## Nota sobre codigo anterior
 
 Las carpetas antiguas (`src/components`, `src/screens`, `src/navigation`, etc.) pueden mantenerse como referencia temporal.

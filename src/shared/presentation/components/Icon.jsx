@@ -11,6 +11,10 @@ const ICON_MAP = {
   music: { family: Ionicons, name: "musical-notes" },
   user: { family: Ionicons, name: "person" },
   close: { family: Ionicons, name: "close" },
+  forward: { family: Ionicons, name: "arrow-forward" },
+  sparkles: { family: Ionicons, name: "sparkles" },
+  trend: { family: Ionicons, name: "trending-up" },
+  pulse: { family: Ionicons, name: "radio" },
 };
 
 export default function Icon({ name, size = 20, color = "#FFFFFF" }) {
